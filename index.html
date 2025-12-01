@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VulneraX | Advanced Web Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              cyber: {
+                black: '#020617',
+                dark: '#0B1120',
+                cyan: '#00E5FF',
+                blue: '#1A8FE3',
+                red: '#FF2A6D',
+                yellow: '#FCEE0A',
+                glass: 'rgba(11, 17, 32, 0.7)',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['"Share Tech Mono"', 'monospace'],
+              display: ['Orbitron', 'sans-serif'],
+            },
+            animation: {
+              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'grid-flow': 'gridFlow 20s linear infinite',
+              'scan-line': 'scanLine 2s linear infinite',
+            },
+            keyframes: {
+              gridFlow: {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(50px)' },
+              },
+              scanLine: {
+                '0%': { top: '0%' },
+                '100%': { top: '100%' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #020617;
+        color: #e2e8f0;
+        overflow-x: hidden;
+      }
+      .cyber-grid {
+        background-image: linear-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+        perspective: 500px;
+      }
+      .glass-panel {
+        background: rgba(11, 17, 32, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 229, 255, 0.1);
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.05);
+      }
+      .text-glow {
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+      }
+      .border-glow {
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.3), inset 0 0 5px rgba(0, 229, 255, 0.1);
+      }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #020617;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1A8FE3;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #00E5FF;
+      }
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white; color: black; }
+        .cyber-grid { display: none; }
+        .glass-panel { border: 1px solid #ccc; box-shadow: none; backdrop-filter: none; background: white; color: black; }
+        .text-glow { text-shadow: none; }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "VulneraX - Advanced Web Vulnerability Scanner",
+  "description": "A real-time, AI-powered cybersecurity assessment tool for analyzing web vulnerabilities, SSL posture, and security headers with a futuristic cyber-interface.",
+  "requestFramePermissions": []
+}
