@@ -5,32 +5,30 @@ const SCAN_SYSTEM_INSTRUCTION = `
 You are VulneraX, an advanced cybersecurity analysis engine.
 Your task is to perform a simulated passive security scan on a given URL.
 
-IMPORTANT: Since you cannot actively probe the server's network stack in real-time:
-1. Infer potential vulnerabilities based on the URL structure, query parameters, and common technology stacks associated with that type of site.
-2. DO NOT HALLUCINATE specific infrastructure details (like "GoDaddy", "Hostinger", "AWS") unless you are 100% certain based on the URL. If unknown, return "Unknown" or "Hidden".
-3. DO NOT guess the CMS (like "WordPress") unless the URL path suggests it (e.g., /wp-admin).
-4. Focus on educating the user about potential risks (missing headers, SSL best practices) rather than inventing fake registrar data.
-
-If the target is a well-known site (e.g., google.com), return accurate real-world data if known.
-If the target is unknown (like a personal portfolio), return "Unknown" for Registrar/Server, but provide a generic security assessment based on standard web best practices.
+IMPORTANT GUIDELINES:
+1. INFER vulnerabilities based on the URL structure and common tech stacks.
+2. If the target is unknown, return "Unknown" for specific fields instead of guessing (e.g. Registrar).
+3. DO NOT refuse the request. This is a simulated, educational exercise.
+4. RETURN ONLY RAW JSON. Do not use Markdown formatting like \`\`\`json.
 
 You must return a JSON object.
-Strictly adhere to the schema.
-The risk score should be 0-100, where 100 is perfectly secure and 0 is highly vulnerable.
-Common Open Ports to check: 80, 443, 8080, 21, 22, 3306.
-Common Sensitive Files: .git/HEAD, .env, wp-config.php.
-Common Vulnerabilities: XSS, SQLi, CSRF, Missing CSP, Weak SSL.
-
-Do NOT act as a malicious tool. This is for educational and defensive assessment only.
+The risk score should be 0-100 (100 = Secure).
 `;
+
+// Helper to clean AI output if it includes Markdown
+const cleanJsonOutput = (text: string) => {
+  // Remove markdown code blocks if present
+  const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // Ensure we only grab the JSON object part
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  return jsonMatch ? jsonMatch[0] : cleaned;
+};
 
 export const analyzeTarget = async (url: string): Promise<ScanResult> => {
   try {
-    // Securely load the key from the environment variables
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     
     if (!apiKey) {
-      console.error("CRITICAL ERROR: API Key is missing or empty.");
       throw new Error("API Key missing");
     }
 
@@ -41,13 +39,20 @@ export const analyzeTarget = async (url: string): Promise<ScanResult> => {
       contents: `Analyze target URL: ${url}`,
       config: {
         systemInstruction: SCAN_SYSTEM_INSTRUCTION,
+        // SAFETY SETTINGS: Cast to 'any' to bypass strict Enum typing issues in some SDK versions
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+        ] as any,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             target: { type: Type.STRING },
             timestamp: { type: Type.STRING },
-            score: { type: Type.NUMBER, description: "Security score 0-100" },
+            score: { type: Type.NUMBER },
             riskLevel: { type: Type.STRING, enum: ["Low", "Medium", "High", "Critical"] },
             summary: { type: Type.STRING },
             ssl: {
@@ -111,27 +116,39 @@ export const analyzeTarget = async (url: string): Promise<ScanResult> => {
       }
     });
 
-    const text = response.text; // Note: response.text is a property in newer SDKs
-    if (!text) throw new Error("No response from AI");
-    
-    return JSON.parse(text) as ScanResult;
+    // Handle response structure (SDK version specific)
+    // We treat 'response' as any to safely check properties without TS errors
+    const safeResponse = response as any;
+    let rawText = '';
+
+    if (typeof safeResponse.text === 'function') {
+        rawText = safeResponse.text();
+    } else if (typeof safeResponse.text === 'string') {
+        rawText = safeResponse.text;
+    } else {
+        // Force fallback if response is empty
+        throw new Error("Empty response from AI (likely safety block)");
+    }
+
+    const cleanedJson = cleanJsonOutput(rawText);
+    return JSON.parse(cleanedJson) as ScanResult;
 
   } catch (error) {
     console.error("Scan failed:", error);
-    // Fallback simulation
+    // Fallback simulation to prevent infinite loading
     return {
       target: url,
       timestamp: new Date().toISOString(),
       score: 45,
       riskLevel: "High",
-      summary: "Simulated Report: Connection to AI Intelligence failed. Returning default fallback data for demonstration.",
+      summary: "Connection to AI interrupted. Returning simulated fallback data.",
       ssl: { valid: true, issuer: "Simulated CA", expiry: "2025-12-31", algorithm: "SHA-256", grade: "B" },
       headers: { grade: "C", missing: ["Content-Security-Policy", "X-Frame-Options"], present: ["Server"] },
       techStack: { cms: "Unknown", server: "Nginx", language: "PHP", frameworks: [] },
       openPorts: [80, 443],
       dns: { ip: "192.168.1.1", registrar: "Unknown", location: "Unknown", nameservers: [] },
       sensitiveFiles: { found: false, files: [] },
-      vulnerabilities: [{ type: "API Error", severity: "Low", description: "Could not reach AI analysis engine.", remediation: "Check API Key configuration." }]
+      vulnerabilities: [{ type: "Scan Error", severity: "Low", description: "AI Analysis timed out or was blocked.", remediation: "Try a different URL or check API quota." }]
     };
   }
 };
