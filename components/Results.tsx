@@ -10,7 +10,8 @@ import {
   FileWarning, 
   Network, 
   Download, 
-  Share2 
+  Share2,
+  Check
 } from 'lucide-react';
 
 interface ResultsProps {
@@ -19,15 +20,39 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ result, onDownload }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: `VulneraX Security Report: ${result.target}`,
+      text: `I just scanned ${result.target} with VulneraX and it got a security score of ${result.score}/100. Check it out!`,
+      url: window.location.href
+    };
+
+    // Try native share (Mobile/Tablet)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      // Fallback to clipboard (Desktop)
+      navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-20">
+    <div className="w-full max-w-7xl mx-auto space-y-6 md:space-y-8 animate-fade-in pb-20">
       {/* Header Summary */}
       <div className="glass-panel p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 border-l-4 border-l-cyber-cyan relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyber-cyan/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
         
-        <div className="flex-1 z-10">
-          <h2 className="text-3xl font-display font-bold text-white mb-2">{result.target}</h2>
-          <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex-1 z-10 w-full text-center md:text-left">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-2 break-all">{result.target}</h2>
+          <div className="flex flex-wrap gap-3 mb-4 justify-center md:justify-start">
             <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wider
               ${result.riskLevel === 'Critical' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 
                 result.riskLevel === 'High' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' :
@@ -39,19 +64,22 @@ const Results: React.FC<ResultsProps> = ({ result, onDownload }) => {
               {result.timestamp.split('T')[0]}
             </span>
           </div>
-          <p className="text-gray-300 max-w-2xl text-sm leading-relaxed">{result.summary}</p>
+          <p className="text-gray-300 max-w-2xl text-sm leading-relaxed mx-auto md:mx-0">{result.summary}</p>
         </div>
         
-        <div className="flex flex-col items-center z-10">
+        <div className="flex flex-col items-center z-10 w-full md:w-auto">
             <RiskGauge score={result.score} />
-            <div className="flex gap-4 mt-4 no-print">
+            <div className="flex gap-4 mt-4 no-print w-full md:w-auto justify-center">
                  <button 
                   onClick={onDownload}
-                  className="flex items-center gap-2 px-4 py-2 bg-cyber-blue/10 hover:bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/50 rounded-lg transition-all text-sm font-mono">
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-cyber-blue/10 hover:bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/50 rounded-lg transition-all text-sm font-mono flex-1 md:flex-initial">
                     <Download size={16} /> Report
                  </button>
-                 <button className="flex items-center gap-2 px-4 py-2 bg-cyber-cyan/10 hover:bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 rounded-lg transition-all text-sm font-mono">
-                    <Share2 size={16} /> Share
+                 <button 
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-cyber-cyan/10 hover:bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 rounded-lg transition-all text-sm font-mono flex-1 md:flex-initial">
+                    {copied ? <Check size={16} /> : <Share2 size={16} />} 
+                    {copied ? 'Copied!' : 'Share'}
                  </button>
             </div>
         </div>
@@ -71,7 +99,7 @@ const Results: React.FC<ResultsProps> = ({ result, onDownload }) => {
             <div className="space-y-3 text-sm font-mono text-gray-300">
                 <div className="flex justify-between border-b border-gray-700/50 pb-2">
                     <span className="text-gray-500">Issuer</span>
-                    <span>{result.ssl.issuer}</span>
+                    <span className="truncate max-w-[150px]">{result.ssl.issuer}</span>
                 </div>
                  <div className="flex justify-between border-b border-gray-700/50 pb-2">
                     <span className="text-gray-500">Expiry</span>
@@ -155,7 +183,7 @@ const Results: React.FC<ResultsProps> = ({ result, onDownload }) => {
                 </div>
                  <div className="flex justify-between">
                     <span className="text-gray-500">Registrar</span>
-                    <span>{result.dns.registrar}</span>
+                    <span className="truncate max-w-[120px]">{result.dns.registrar}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-gray-500">Location</span>
@@ -222,7 +250,7 @@ const Results: React.FC<ResultsProps> = ({ result, onDownload }) => {
                                'bg-blue-500 text-white'}`}>
                             {vuln.severity}
                         </span>
-                        <div className="mt-2 text-cyber-cyan font-mono text-xs">{vuln.type}</div>
+                        <div className="mt-2 text-cyber-cyan font-mono text-xs break-words">{vuln.type}</div>
                     </div>
                     <div className="flex-1">
                         <p className="text-gray-300 text-sm mb-2 font-mono">{vuln.description}</p>

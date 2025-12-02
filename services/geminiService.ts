@@ -4,10 +4,15 @@ import { ScanResult } from "../types";
 const SCAN_SYSTEM_INSTRUCTION = `
 You are VulneraX, an advanced cybersecurity analysis engine.
 Your task is to perform a simulated passive security scan on a given URL.
-Since you cannot physically access the live server in real-time for all metrics, you must use your knowledge base to ESTIMATE the likely security posture, technology stack, and potential vulnerabilities of the provided target.
 
-If the target is a well-known site (e.g., google.com), return accurate real-world data.
-If the target is generic or unknown, generate a REALISTIC SIMULATION of a security report for that type of website.
+IMPORTANT: Since you cannot actively probe the server's network stack in real-time:
+1. Infer potential vulnerabilities based on the URL structure, query parameters, and common technology stacks associated with that type of site.
+2. DO NOT HALLUCINATE specific infrastructure details (like "GoDaddy", "Hostinger", "AWS") unless you are 100% certain based on the URL. If unknown, return "Unknown" or "Hidden".
+3. DO NOT guess the CMS (like "WordPress") unless the URL path suggests it (e.g., /wp-admin).
+4. Focus on educating the user about potential risks (missing headers, SSL best practices) rather than inventing fake registrar data.
+
+If the target is a well-known site (e.g., google.com), return accurate real-world data if known.
+If the target is unknown (like a personal portfolio), return "Unknown" for Registrar/Server, but provide a generic security assessment based on standard web best practices.
 
 You must return a JSON object.
 Strictly adhere to the schema.
@@ -21,10 +26,9 @@ Do NOT act as a malicious tool. This is for educational and defensive assessment
 
 export const analyzeTarget = async (url: string): Promise<ScanResult> => {
   try {
-    // FIX: Using Vite syntax (import.meta.env) instead of Node syntax (process.env)
+    // Securely load the key from the environment variables
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     
-    // Debugging line: Check the console to see if the key is loaded
     if (!apiKey) {
       console.error("CRITICAL ERROR: API Key is missing or empty.");
       throw new Error("API Key missing");
@@ -33,7 +37,7 @@ export const analyzeTarget = async (url: string): Promise<ScanResult> => {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash', // Updated to a more standard model name if 2.5 is unavailable, or keep 1.5-flash
+      model: 'gemini-2.0-flash', 
       contents: `Analyze target URL: ${url}`,
       config: {
         systemInstruction: SCAN_SYSTEM_INSTRUCTION,
@@ -107,7 +111,7 @@ export const analyzeTarget = async (url: string): Promise<ScanResult> => {
       }
     });
 
-    const text = response.text; // Note: response.text() is usually a function in newer SDKs
+    const text = response.text; // Note: response.text is a property in newer SDKs
     if (!text) throw new Error("No response from AI");
     
     return JSON.parse(text) as ScanResult;
